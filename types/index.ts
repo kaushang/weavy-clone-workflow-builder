@@ -115,3 +115,6 @@ export interface Workflow {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Export node configs
+export * from './nodes';
