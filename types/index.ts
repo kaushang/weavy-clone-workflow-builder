@@ -1,10 +1,10 @@
 // Node Types
-export type NodeType = 
-  | 'textNode' 
-  | 'uploadImage' 
-  | 'uploadVideo' 
-  | 'llmNode' 
-  | 'cropImage' 
+export type NodeType =
+  | 'textNode'
+  | 'uploadImage'
+  | 'uploadVideo'
+  | 'llmNode'
+  | 'cropImage'
   | 'extractFrame';
 
 // Handle Types
@@ -76,12 +76,12 @@ export interface ExtractFrameNodeData extends BaseNodeData {
 }
 
 // Union type for all node data
-export type NodeData = 
-  | TextNodeData 
-  | UploadImageNodeData 
-  | UploadVideoNodeData 
-  | LLMNodeData 
-  | CropImageNodeData 
+export type NodeData =
+  | TextNodeData
+  | UploadImageNodeData
+  | UploadVideoNodeData
+  | LLMNodeData
+  | CropImageNodeData
   | ExtractFrameNodeData;
 
 // Workflow Run Status

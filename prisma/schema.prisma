@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://neondb_owner:npg_dmUo58CWGjru@ep-misty-resonance-ahkrjp4v-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+}
+
+// User workflows
+model Workflow {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  nodes     Json
+  edges     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  runs      WorkflowRun[]
+
+  @@index([userId])
+}
+
+// Workflow execution history
+model WorkflowRun {
+  id          String   @id @default(cuid())
+  workflowId  String
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  userId      String
+  status      String
+  scope       String
+  duration    Int?
+  nodeResults Json
+  createdAt   DateTime @default(now())
+
+  @@index([workflowId])
+  @@index([userId])
+  @@index([createdAt])
+}
