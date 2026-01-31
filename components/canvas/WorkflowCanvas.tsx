@@ -23,6 +23,7 @@ import { NODE_CONFIGS } from '@/types/nodes';
 import { NodeType } from '@/types';
 import { canConnect, getHandleType, wouldCreateCycle } from '@/lib/utils'
 import Toast from '../ui/Toast';
+import HandleLegend from '../ui/HandleLegend';
 
 function FlowCanvas() {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -37,6 +38,7 @@ function FlowCanvas() {
         setSelectedNodes,
         deleteNode,
         addNode
+
     } = useWorkflowStore();
 
     useEffect(() => {
@@ -262,6 +264,8 @@ function FlowCanvas() {
                     animated: true,
                     style: { stroke: '#8B5CF6', strokeWidth: 2 },
                 }}
+                connectionLineStyle={{ stroke: '#8B5CF6', strokeWidth: 2 }}
+                // connectionLineType="bezier"
             >
                 {/* Dot pattern background */}
                 <Background
@@ -296,6 +300,7 @@ function FlowCanvas() {
 
                 {/* Info panel */}
                 <Panel position="top-left" className="bg-weavy-gray/90 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-xl p-4 m-4">
+                    {/* <HandleLegend /> */}
                     <div className="text-white">
                         <div className="flex items-center gap-2 mb-3">
                             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -328,6 +333,10 @@ function FlowCanvas() {
                             </li>
                         </ul>
                     </div>
+                    {/* <HandleLegend /> */}
+                </Panel>
+                <Panel position="bottom-left" className="m-4">
+                    <HandleLegend />
                 </Panel>
             </ReactFlow>
             {/* Toast Notifications */}

@@ -21,7 +21,7 @@ function CropImageNode({ id, data }: NodeProps) {
       id={id}
       data={data}
       color="#EC4899"
-      inputs={[{ id: 'image', type: 'image', label: 'Image Input' }]}
+      inputs={[{ id: 'image', type: 'image', label: 'Image Input', required: true }]}
       outputs={[{ id: 'output', type: 'url', label: 'Cropped Image URL' }]}
     >
       <div className="space-y-3">
@@ -34,6 +34,7 @@ function CropImageNode({ id, data }: NodeProps) {
           <div>
             <label className="text-gray-400 text-xs mb-1 block">X Position %:</label>
             <input
+              required
               type="number"
               value={data.xPercent || 0}
               onChange={(e) => handleChange('xPercent', Number(e.target.value))}
@@ -45,6 +46,7 @@ function CropImageNode({ id, data }: NodeProps) {
           <div>
             <label className="text-gray-400 text-xs mb-1 block">Y Position %:</label>
             <input
+              required
               type="number"
               value={data.yPercent || 0}
               onChange={(e) => handleChange('yPercent', Number(e.target.value))}
@@ -56,6 +58,7 @@ function CropImageNode({ id, data }: NodeProps) {
           <div>
             <label className="text-gray-400 text-xs mb-1 block">Width %:</label>
             <input
+              required
               type="number"
               value={data.widthPercent || 100}
               onChange={(e) => handleChange('widthPercent', Number(e.target.value))}
@@ -67,6 +70,7 @@ function CropImageNode({ id, data }: NodeProps) {
           <div>
             <label className="text-gray-400 text-xs mb-1 block">Height %:</label>
             <input
+              required
               type="number"
               value={data.heightPercent || 100}
               onChange={(e) => handleChange('heightPercent', Number(e.target.value))}

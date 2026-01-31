@@ -28,7 +28,7 @@ function ExtractFrameNode({ id, data }: NodeProps) {
       id={id}
       data={data}
       color="#6366F1"
-      inputs={[{ id: 'video', type: 'video', label: 'Video Input' }]}
+      inputs={[{ id: 'video', type: 'video', label: 'Video Input', required: true }]}
       outputs={[{ id: 'output', type: 'url', label: 'Frame Image URL' }]}
     >
       <div className="space-y-3">
