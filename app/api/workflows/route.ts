@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { getUserWorkflows, saveWorkflow } from '@/lib/db/workflows';
 
 // GET all workflows for current user
 export async function GET() {
   try {
-    const user = await currentUser();
+    const { userId } = await auth();
     
-    if (!user) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const workflows = await getUserWorkflows(user.id);
+    const workflows = await getUserWorkflows(userId);
     
     return NextResponse.json({ workflows });
   } catch (error) {
@@ -26,16 +26,16 @@ export async function GET() {
 // POST create new workflow
 export async function POST(request: NextRequest) {
   try {
-    const user = await currentUser();
+    const { userId } = await auth();
     
-    if (!user) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
     const { name, nodes, edges } = body;
 
-    const workflow = await saveWorkflow(user.id, name, nodes, edges);
+    const workflow = await saveWorkflow(userId, name, nodes, edges);
     
     return NextResponse.json({ workflow }, { status: 201 });
   } catch (error) {

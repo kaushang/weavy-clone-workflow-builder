@@ -9,7 +9,11 @@ interface WorkflowState {
   isRunning: boolean;
   runningNodes: Set<string>;
   connectionErrors: string[];
-  
+
+  workflowId: string | null;
+  workflowName: string;
+  isSaved: boolean;
+  lastSavedAt: Date | null;
   // Actions
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
@@ -28,37 +32,53 @@ interface WorkflowState {
   // New: Get connected nodes
   getConnectedInputs: (nodeId: string) => Record<string, string>;
   getConnectedOutputs: (nodeId: string) => string[];
+
+  setWorkflowId: (id: string | null) => void;
+  setWorkflowName: (name: string) => void;
+  markAsSaved: () => void;
+  markAsUnsaved: () => void;
+  loadWorkflow: (workflow: { id: string; name: string; nodes: any[]; edges: any[] }) => void;
+  clearWorkflow: () => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => ({
+  // Existing initial state
   nodes: [],
   edges: [],
   selectedNodes: [],
   isRunning: false,
   runningNodes: new Set<string>(),
   connectionErrors: [],
-
-  setNodes: (nodes) => set({ nodes }),
   
-  setEdges: (edges) => set({ edges }),
+  // New: Workflow metadata initial state
+  workflowId: null,
+  workflowName: 'Untitled Workflow',
+  isSaved: true,
+  lastSavedAt: null,
+
+  setNodes: (nodes) => set({ nodes, isSaved: false }),
+  
+  setEdges: (edges) => set({ edges, isSaved: false }),
   
   addNode: (node) => set((state) => ({
-    nodes: [...state.nodes, { ...node, id: node.id || uuidv4() }]
+    nodes: [...state.nodes, { ...node, id: node.id || uuidv4() }],
+    isSaved: false,
   })),
   
   updateNode: (id, data) => set((state) => ({
     nodes: state.nodes.map((node) =>
       node.id === id ? { ...node, data: { ...node.data, ...data } } : node
-    )
+    ),
+    isSaved: false,
   })),
   
   deleteNode: (id) => set((state) => ({
     nodes: state.nodes.filter((node) => node.id !== id),
-    edges: state.edges.filter((edge) => edge.source !== id && edge.target !== id)
+    edges: state.edges.filter((edge) => edge.source !== id && edge.target !== id),
+    isSaved: false,
   })),
   
   onConnect: (connection) => set((state) => {
-    // Check if connection already exists
     const existingEdge = state.edges.find(
       (edge) =>
         edge.source === connection.source &&
@@ -68,7 +88,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     );
 
     if (existingEdge) {
-      return state; // Don't add duplicate
+      return state;
     }
 
     const newEdge: Edge = {
@@ -82,7 +102,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       style: { stroke: '#8B5CF6', strokeWidth: 2 },
     };
     
-    return { edges: [...state.edges, newEdge] };
+    return { edges: [...state.edges, newEdge], isSaved: false };
   }),
   
   setSelectedNodes: (nodeIds) => set({ selectedNodes: nodeIds }),
@@ -110,6 +130,10 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     isRunning: false,
     runningNodes: new Set<string>(),
     connectionErrors: [],
+    workflowId: null,
+    workflowName: 'Untitled Workflow',
+    isSaved: true,
+    lastSavedAt: null,
   }),
 
   addConnectionError: (error) => set((state) => ({
@@ -118,7 +142,6 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   clearConnectionErrors: () => set({ connectionErrors: [] }),
 
-  // Get all inputs connected to a node
   getConnectedInputs: (nodeId) => {
     const state = get();
     const connectedInputs: Record<string, string> = {};
@@ -135,11 +158,44 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     return connectedInputs;
   },
 
-  // Get all nodes connected to outputs of a node
   getConnectedOutputs: (nodeId) => {
     const state = get();
     return state.edges
       .filter((edge) => edge.source === nodeId)
       .map((edge) => edge.target);
   },
+
+  // New: Workflow management actions
+  setWorkflowId: (id) => set({ workflowId: id }),
+  
+  setWorkflowName: (name) => set({ workflowName: name, isSaved: false }),
+  
+  markAsSaved: () => set({ isSaved: true, lastSavedAt: new Date() }),
+  
+  markAsUnsaved: () => set({ isSaved: false }),
+  
+  loadWorkflow: (workflow) => set({
+    workflowId: workflow.id,
+    workflowName: workflow.name,
+    nodes: workflow.nodes,
+    edges: workflow.edges,
+    isSaved: true,
+    lastSavedAt: new Date(),
+    selectedNodes: [],
+    isRunning: false,
+    runningNodes: new Set<string>(),
+  }),
+  
+  clearWorkflow: () => set({
+    nodes: [],
+    edges: [],
+    selectedNodes: [],
+    isRunning: false,
+    runningNodes: new Set<string>(),
+    connectionErrors: [],
+    workflowId: null,
+    workflowName: 'Untitled Workflow',
+    isSaved: true,
+    lastSavedAt: null,
+  }),
 }));

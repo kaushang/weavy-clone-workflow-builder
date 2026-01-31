@@ -5,6 +5,7 @@ import LeftSidebar from "@/components/sidebar/LeftSidebar";
 import WorkflowCanvas from "@/components/canvas/WorkflowCanvas";
 import HistoryPanel from "@/components/history/HistoryPanel";
 import Navbar from "@/components/Navbar";
+import AutoSaveWrapper from "@/components/AutoSaveWrapper";
 
 export default async function WorkflowPage() {
   const user = await currentUser();
@@ -14,18 +15,20 @@ export default async function WorkflowPage() {
   }
 
   return (
-    <div className="relative h-screen w-full">
-      {/* Top Navbar */}
-      <Navbar />
+    <AutoSaveWrapper>
+      <div className="relative h-screen w-full">
+        {/* Top Navbar */}
+        <Navbar />
 
-      {/* Main Layout (with top padding for navbar) */}
-      <div className="pt-16 h-full">
-        <WorkflowLayout
-          sidebar={<LeftSidebar />}
-          canvas={<WorkflowCanvas />}
-          history={<HistoryPanel />}
-        />
+        {/* Main Layout (with top padding for navbar) */}
+        <div className="pt-16 h-full">
+          <WorkflowLayout
+            sidebar={<LeftSidebar />}
+            canvas={<WorkflowCanvas />}
+            history={<HistoryPanel />}
+          />
+        </div>
       </div>
-    </div>
+    </AutoSaveWrapper>
   );
 }

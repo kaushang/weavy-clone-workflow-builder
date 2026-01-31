@@ -15,6 +15,7 @@ import ReactFlow, {
     BackgroundVariant,
     ReactFlowProvider,
     Panel,
+    useReactFlow
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useWorkflowStore } from '@/store/workflowStore';
@@ -29,6 +30,7 @@ function FlowCanvas() {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'error' | 'success' | 'info' }>>([]);
+    const reactFlowInstance = useReactFlow();
     const {
         nodes,
         edges,
@@ -201,23 +203,24 @@ function FlowCanvas() {
         setIsDraggingOver(false);
     }, []);
 
-    // Handle drop on canvas
+    // Handle drop on canvas - UPDATED VERSION
     const onDrop = useCallback(
         (event: React.DragEvent) => {
             event.preventDefault();
+            setIsDraggingOver(false);
 
             const type = event.dataTransfer.getData('application/reactflow');
             if (!type) return;
 
-            // Get the bounds of the canvas
-            const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-            if (!reactFlowBounds) return;
+            // Use ReactFlow's screenToFlowPosition for accurate positioning
+            const position = reactFlowInstance.screenToFlowPosition({
+                x: event.clientX,
+                y: event.clientY,
+            });
 
-            // Calculate position relative to the canvas
-            const position = {
-                x: event.clientX - reactFlowBounds.left - 140, // Offset for node width
-                y: event.clientY - reactFlowBounds.top - 50,   // Offset for node height
-            };
+            // Adjust for node center (half of node width and approximate height)
+            position.x -= 140; // Half of 280px width
+            position.y -= 40;  // Approximate center
 
             // Create new node data based on type
             const newNode = {
@@ -227,7 +230,6 @@ function FlowCanvas() {
                 data: {
                     label: NODE_CONFIGS[type as NodeType]?.label || 'Node',
                     type: type,
-                    // Set default values based on node type
                     ...(type === 'textNode' && { text: '' }),
                     ...(type === 'cropImage' && {
                         xPercent: 0,
@@ -242,8 +244,8 @@ function FlowCanvas() {
 
             addNode(newNode);
         },
-        [addNode]
-    )
+        [reactFlowInstance, addNode, setIsDraggingOver]
+    );
 
     return (
         <div ref={reactFlowWrapper} className={`w-full h-full transition-all ${isDraggingOver ? 'ring-2 ring-weavy-purple ring-inset' : ''
@@ -265,7 +267,7 @@ function FlowCanvas() {
                     style: { stroke: '#8B5CF6', strokeWidth: 2 },
                 }}
                 connectionLineStyle={{ stroke: '#8B5CF6', strokeWidth: 2 }}
-                // connectionLineType="bezier"
+            // connectionLineType="bezier"
             >
                 {/* Dot pattern background */}
                 <Background
