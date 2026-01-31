@@ -25,10 +25,18 @@ import { NodeType } from '@/types';
 import { canConnect, getHandleType, wouldCreateCycle } from '@/lib/utils'
 import Toast from '../ui/Toast';
 import HandleLegend from '../ui/HandleLegend';
-
+import ConnectionFlowIndicator from './ConnectionFlowIndicator';
+import DataFlowEdge from './DataFlowEdge';
 function FlowCanvas() {
+    const [connectionAttempt, setConnectionAttempt] = useState<{
+        sourceNode: string;
+        targetNode: string;
+        handleType: string;
+        isValid: boolean;
+    } | null>(null);
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
+    const [isConnecting, setIsConnecting] = useState(false);
     const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'error' | 'success' | 'info' }>>([]);
     const reactFlowInstance = useReactFlow();
     const {
@@ -131,12 +139,27 @@ function FlowCanvas() {
         [edges, setEdges]
     );
 
-    // Validate connections before allowing them
     const isValidConnection = useCallback((connection: any) => {
         const sourceNode = nodes.find((n) => n.id === connection.source);
         const targetNode = nodes.find((n) => n.id === connection.target);
 
         if (!sourceNode || !targetNode) return false;
+
+        const sourceHandleType = getHandleType(sourceNode.type!, connection.sourceHandle || 'output');
+        const targetHandleType = getHandleType(targetNode.type!, connection.targetHandle || 'input');
+
+        const isCompatible = canConnect(sourceHandleType, targetHandleType);
+
+        // Show connection indicator
+        setConnectionAttempt({
+            sourceNode: sourceNode.data.label,
+            targetNode: targetNode.data.label,
+            handleType: sourceHandleType,
+            isValid: isCompatible,
+        });
+
+        // Clear after delay
+        setTimeout(() => setConnectionAttempt(null), 2000);
 
         if (connection.source === connection.target) {
             setToasts((prev) => [...prev, {
@@ -156,15 +179,10 @@ function FlowCanvas() {
             return false;
         }
 
-        const sourceHandleType = getHandleType(sourceNode.type!, connection.sourceHandle || 'output');
-        const targetHandleType = getHandleType(targetNode.type!, connection.targetHandle || 'input');
-
-        const isCompatible = canConnect(sourceHandleType, targetHandleType);
-
         if (!isCompatible) {
             setToasts((prev) => [...prev, {
                 id: Date.now().toString(),
-                message: `Incompatible types: ${sourceHandleType} cannot connect to ${targetHandleType}`,
+                message: `Incompatible types: ${sourceHandleType} → ${targetHandleType}`,
                 type: 'error',
             }]);
         }
@@ -179,7 +197,13 @@ function FlowCanvas() {
         },
         [setSelectedNodes]
     );
-
+    // Register custom edge types
+    const edgeTypes = useMemo(
+        () => ({
+            default: DataFlowEdge,
+        }),
+        []
+    );
     // Register custom node types
     const nodeTypes = useMemo(
         () => ({
@@ -247,6 +271,14 @@ function FlowCanvas() {
         [reactFlowInstance, addNode, setIsDraggingOver]
     );
 
+    const onConnectStart = useCallback(() => {
+        setIsConnecting(true);
+    }, []);
+
+    const onConnectEnd = useCallback(() => {
+        setIsConnecting(false);
+    }, []);
+
     return (
         <div ref={reactFlowWrapper} className={`w-full h-full transition-all ${isDraggingOver ? 'ring-2 ring-weavy-purple ring-inset' : ''
             }`} onDrop={onDrop} onDragOver={onDragOver} onDragLeave={onDragLeave}>
@@ -254,11 +286,14 @@ function FlowCanvas() {
                 nodes={nodes}
                 edges={edges}
                 nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
                 isValidConnection={isValidConnection}
                 onSelectionChange={onSelectionChange}
+                onConnectStart={onConnectStart}
+                onConnectEnd={onConnectEnd}
                 fitView
                 snapToGrid
                 snapGrid={[15, 15]}
@@ -266,7 +301,11 @@ function FlowCanvas() {
                     animated: true,
                     style: { stroke: '#8B5CF6', strokeWidth: 2 },
                 }}
-                connectionLineStyle={{ stroke: '#8B5CF6', strokeWidth: 2 }}
+                connectionLineStyle={{
+                    stroke: '#8B5CF6',
+                    strokeWidth: 3,
+                    strokeDasharray: '5, 5',
+                }}
             // connectionLineType="bezier"
             >
                 {/* Dot pattern background */}
@@ -302,11 +341,17 @@ function FlowCanvas() {
 
                 {/* Info panel */}
                 <Panel position="top-left" className="bg-weavy-gray/90 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-xl p-4 m-4">
-                    {/* <HandleLegend /> */}
                     <div className="text-white">
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                            <p className="font-bold text-sm">Canvas Controls</p>
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                <p className="font-bold text-sm">Canvas Controls</p>
+                            </div>
+                            <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                                <span>{nodes.length} nodes</span>
+                                <span>•</span>
+                                <span>{edges.length} connections</span>
+                            </div>
                         </div>
                         <ul className="text-xs text-gray-300 space-y-2">
                             <li className="flex items-start gap-2">
@@ -323,24 +368,27 @@ function FlowCanvas() {
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-weavy-purple font-mono">•</span>
-                                <span><strong className="text-white">Scroll</strong> to zoom in/out</span>
+                                <span><strong className="text-white">Select</strong> edge to see data type</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-weavy-purple font-mono">•</span>
                                 <span><strong className="text-white">Delete/Backspace</strong> to remove</span>
                             </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-weavy-purple font-mono">•</span>
-                                <span><strong className="text-white">Click background</strong> to deselect</span>
-                            </li>
                         </ul>
                     </div>
-                    {/* <HandleLegend /> */}
                 </Panel>
                 <Panel position="bottom-left" className="m-4">
                     <HandleLegend />
                 </Panel>
             </ReactFlow>
+            {connectionAttempt && (
+                <ConnectionFlowIndicator
+                    sourceNodeName={connectionAttempt.sourceNode}
+                    targetNodeName={connectionAttempt.targetNode}
+                    handleType={connectionAttempt.handleType}
+                    isValid={connectionAttempt.isValid}
+                />
+            )}
             {/* Toast Notifications */}
             {toasts.map((toast) => (
                 <Toast

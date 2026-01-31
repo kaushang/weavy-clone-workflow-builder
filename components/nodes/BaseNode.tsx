@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { getHandleColor } from '@/lib/nodeHandles';
 import NodeValidationBadge from '../ui/NodeValidationBadge';
 import { NodeType } from '@/types';
+import EnhancedHandle from '../canvas/EnhancedHandle';
 
 interface HandleInfo {
   id: string;
@@ -45,7 +46,6 @@ function BaseNode({ id, data, children, color, inputs = [], outputs = [] }: Base
       }}
     >
       {/* Header */}
-      {/* Header */}
       <div
         className="px-3 py-2 rounded-t-lg border-b border-gray-700 flex items-center justify-between"
         style={{ backgroundColor: color + '15' }}
@@ -70,80 +70,43 @@ function BaseNode({ id, data, children, color, inputs = [], outputs = [] }: Base
         {children}
       </div>
 
-{/* Input Handles */}
+      {/* Input Handles */}
       {inputs.map((input, index) => {
         const isConnected = !!connectedInputs[input.id];
-        const handleColor = getHandleColor(input.type);
-        
+        const topPercentage = ((index + 1) * 100) / (inputs.length + 1);
+
         return (
-          <div key={input.id} className="group/handle">
-            <Handle
-              type="target"
-              position={Position.Left}
-              id={input.id}
-              style={{
-                top: `${((index + 1) * 100) / (inputs.length + 1)}%`,
-                background: isConnected ? handleColor : '#374151',
-                width: 10,
-                height: 10,
-                border: `2px solid ${isConnected ? '#fff' : '#6B7280'}`,
-                boxShadow: isConnected ? `0 0 8px ${handleColor}` : 'none',
-              }}
-              className="hover:scale-125 transition-all duration-200"
-            />
-            {/* Handle Tooltip */}
-            <div
-              className="absolute pointer-events-none z-50"
-              style={{
-                left: -12,
-                top: `${((index + 1) * 100) / (inputs.length + 1)}%`,
-                transform: 'translateX(-100%) translateY(-50%)',
-              }}
-            >
-              <div className="opacity-0 group-hover/handle:opacity-100 transition-opacity duration-200 px-2 py-1 rounded bg-gray-900 text-white text-[10px] font-medium whitespace-nowrap border border-gray-700 shadow-lg">
-                {input.label}
-                {input.required && <span className="text-red-400 ml-1">*</span>}
-                <div className="text-gray-400 text-[9px] mt-0.5">{input.type}</div>
-              </div>
-            </div>
-          </div>
+          <EnhancedHandle
+            key={input.id}
+            handleId={input.id}
+            handleType={input.type}
+            label={input.label}
+            required={input.required}
+            isConnected={isConnected}
+            isSource={false}
+            style={{
+              top: `${topPercentage}%`,
+            }}
+          />
         );
       })}
 
       {/* Output Handles */}
       {outputs.map((output, index) => {
-        const handleColor = getHandleColor(output.type);
+        const topPercentage = ((index + 1) * 100) / (outputs.length + 1);
 
         return (
-          <div key={output.id}>
-            <Handle
-              type="source"
-              position={Position.Right}
-              id={output.id}
-              style={{
-                top: `${((index + 1) * 100) / (outputs.length + 1)}%`,
-                background: handleColor,
-                width: 10,
-                height: 10,
-                border: '2px solid white',
-                boxShadow: `0 0 8px ${handleColor}`,
-              }}
-              className="hover:scale-125 transition-transform"
-            />
-            {/* Handle Label */}
-            <div
-              className="absolute pointer-events-none"
-              style={{
-                right: -8,
-                top: `${((index + 1) * 100) / (outputs.length + 1)}%`,
-                transform: 'translateX(100%) translateY(-50%)',
-              }}
-            >
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-0.5 rounded bg-gray-800 text-white text-[10px] font-medium whitespace-nowrap">
-                {output.label}
-              </div>
-            </div>
-          </div>
+          <EnhancedHandle
+            key={output.id}
+            handleId={output.id}
+            handleType={output.type}
+            label={output.label}
+            isConnected={true} // Outputs are always "ready"
+            isSource={true}
+            style={{
+              top: `${topPercentage}%`,
+            }}
+          />
         );
       })}
     </div>
