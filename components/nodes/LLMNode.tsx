@@ -155,7 +155,7 @@ function LLMNode({ id, data }: NodeProps) {
               step="0.1"
               value={data.temperature || 0.7}
               onChange={handleTemperatureChange}
-              className="w-full accent-weavy-purple"
+              className="w-full accent-weavy-purple nodrag nopan"
             />
             <div className="flex justify-between text-[10px] text-gray-500 mt-1">
               <span>Precise (0)</span>

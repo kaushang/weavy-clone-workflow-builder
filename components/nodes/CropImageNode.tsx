@@ -106,7 +106,7 @@ function CropImageNode({ id, data }: NodeProps) {
               max="100"
               value={data.xPercent || 0}
               onChange={(e) => handleChange('xPercent', Number(e.target.value))}
-              className="w-full accent-pink-500"
+              className="w-full accent-pink-500 nodrag nopan"
             />
           </div>
 
@@ -122,7 +122,7 @@ function CropImageNode({ id, data }: NodeProps) {
               max="100"
               value={data.yPercent || 0}
               onChange={(e) => handleChange('yPercent', Number(e.target.value))}
-              className="w-full accent-pink-500"
+              className="w-full accent-pink-500 nodrag nopan"
             />
           </div>
 
@@ -138,7 +138,7 @@ function CropImageNode({ id, data }: NodeProps) {
               max="100"
               value={data.widthPercent || 100}
               onChange={(e) => handleChange('widthPercent', Number(e.target.value))}
-              className="w-full accent-pink-500"
+              className="w-full accent-pink-500 nodrag nopan"
             />
           </div>
 
@@ -154,7 +154,7 @@ function CropImageNode({ id, data }: NodeProps) {
               max="100"
               value={data.heightPercent || 100}
               onChange={(e) => handleChange('heightPercent', Number(e.target.value))}
-              className="w-full accent-pink-500"
+              className="w-full accent-pink-500 nodrag nopan"
             />
           </div>
 
