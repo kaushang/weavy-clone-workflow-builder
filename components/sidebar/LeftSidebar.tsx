@@ -19,7 +19,7 @@ export default function LeftSidebar() {
       {/* Header */}
       <div className="p-4 border-b border-gray-700">
         <h2 className="text-white font-semibold text-lg mb-3">Node Types</h2>
-        
+
         {/* Search Bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -34,9 +34,12 @@ export default function LeftSidebar() {
       </div>
 
       {/* Quick Access Label */}
-      <div className="px-4 py-2 bg-weavy-dark">
+      <div className="px-4 py-2 bg-weavy-dark border-b border-gray-700">
         <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">
           Quick Access
+        </p>
+        <p className="text-gray-500 text-xs mt-1">
+          Click or drag to canvas
         </p>
       </div>
 

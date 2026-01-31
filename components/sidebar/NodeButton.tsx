@@ -4,12 +4,14 @@ import { NodeConfig } from '@/types/nodes';
 import * as LucideIcons from 'lucide-react';
 import { useWorkflowStore } from '@/store/workflowStore';
 import { generateNodeId } from '@/lib/utils';
+import { useState } from 'react';
 
 interface NodeButtonProps {
     config: NodeConfig;
 }
 
 export default function NodeButton({ config }: NodeButtonProps) {
+    const [isDragging, setIsDragging] = useState(false);
     const addNode = useWorkflowStore((state) => state.addNode);
 
     // Get the icon component dynamically
@@ -43,10 +45,27 @@ export default function NodeButton({ config }: NodeButtonProps) {
         addNode(newNode);
     };
 
+    // Handle drag start
+    const onDragStart = (event: React.DragEvent, nodeType: string) => {
+        event.dataTransfer.setData('application/reactflow', nodeType);
+        event.dataTransfer.effectAllowed = 'move';
+        setIsDragging(true);
+    };
+
+    const onDragEnd = () => {
+        setIsDragging(false);
+    };
     return (
         <button
             onClick={handleClick}
-            className="w-full flex items-center gap-3 p-3 rounded-lg bg-weavy-dark hover:bg-gray-700 border border-gray-600 hover:border-weavy-purple transition-all group"
+            draggable
+            onDragStart={(e) => onDragStart(e, config.type)}
+            onDragEnd={onDragEnd}
+            className={`w-full flex items-center gap-3 p-3 rounded-lg bg-weavy-dark hover:bg-gray-700 border transition-all group cursor-grab active:cursor-grabbing ${isDragging
+                    ? 'border-weavy-purple opacity-50'
+                    : 'border-gray-600 hover:border-weavy-purple'
+                }`}
+
         >
             {/* Icon */}
             <div

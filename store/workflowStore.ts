@@ -22,6 +22,7 @@ interface WorkflowState {
   removeRunningNode: (nodeId: string) => void;
   clearRunningNodes: () => void;
   resetWorkflow: () => void;
+  // deleteNode: (id: string) => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => ({
