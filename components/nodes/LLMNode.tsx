@@ -1,21 +1,24 @@
 'use client';
 
-import { memo, useCallback } from 'react';
+import { memo, useMemo } from 'react';
 import { NodeProps } from 'reactflow';
 import BaseNode from './BaseNode';
-import { Sparkles, CheckCircle } from 'lucide-react';
+import { Sparkles, CheckCircle, Circle } from 'lucide-react';
 import { GEMINI_MODELS } from '@/lib/constants';
 import { useWorkflowStore } from '@/store/workflowStore';
 
 function LLMNode({ id, data }: NodeProps) {
   const updateNode = useWorkflowStore((state) => state.updateNode);
+  const getConnectedInputs = useWorkflowStore((state) => state.getConnectedInputs);
 
-  const handleModelChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      updateNode(id, { selectedModel: e.target.value });
-    },
-    [id, updateNode]
-  );
+  // Get connected inputs
+  const connectedInputs = useMemo(() => {
+    return getConnectedInputs(id);
+  }, [id, getConnectedInputs]);
+
+  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    updateNode(id, { selectedModel: e.target.value });
+  };
 
   return (
     <BaseNode
@@ -50,19 +53,37 @@ function LLMNode({ id, data }: NodeProps) {
 
         {/* Connection Status */}
         <div className="bg-weavy-dark rounded p-2 border border-gray-600">
-          <p className="text-gray-400 text-xs mb-1">Connected Inputs:</p>
-          <div className="space-y-1">
+          <p className="text-gray-400 text-xs mb-2 font-medium">Input Status:</p>
+          <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${data.hasSystemPrompt ? 'bg-green-500' : 'bg-gray-600'}`} />
-              <span className="text-gray-400 text-xs">System Prompt</span>
+              {connectedInputs.systemPrompt ? (
+                <CheckCircle className="w-3 h-3 text-green-500" />
+              ) : (
+                <Circle className="w-3 h-3 text-gray-600" />
+              )}
+              <span className={`text-xs ${connectedInputs.systemPrompt ? 'text-green-400' : 'text-gray-500'}`}>
+                System Prompt {connectedInputs.systemPrompt && '(connected)'}
+              </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${data.hasUserMessage ? 'bg-green-500' : 'bg-gray-600'}`} />
-              <span className="text-gray-400 text-xs">User Message</span>
+              {connectedInputs.userMessage ? (
+                <CheckCircle className="w-3 h-3 text-green-500" />
+              ) : (
+                <Circle className="w-3 h-3 text-gray-600" />
+              )}
+              <span className={`text-xs ${connectedInputs.userMessage ? 'text-green-400' : 'text-gray-500'}`}>
+                User Message {connectedInputs.userMessage && '(connected)'}
+              </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${data.hasImages ? 'bg-green-500' : 'bg-gray-600'}`} />
-              <span className="text-gray-400 text-xs">Images (optional)</span>
+              {connectedInputs.images ? (
+                <CheckCircle className="w-3 h-3 text-green-500" />
+              ) : (
+                <Circle className="w-3 h-3 text-gray-600" />
+              )}
+              <span className={`text-xs ${connectedInputs.images ? 'text-green-400' : 'text-gray-500'}`}>
+                Images {connectedInputs.images && '(optional, connected)'}
+              </span>
             </div>
           </div>
         </div>
@@ -77,9 +98,6 @@ function LLMNode({ id, data }: NodeProps) {
             <p className="text-white text-xs leading-relaxed line-clamp-4">
               {data.result}
             </p>
-            <button className="text-amber-500 text-xs mt-2 hover:underline nodrag">
-              Show full response
-            </button>
           </div>
         )}
       </div>

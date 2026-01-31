@@ -18,14 +18,16 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useWorkflowStore } from '@/store/workflowStore';
-import { canConnect } from '@/lib/utils';
 import { generateNodeId } from '@/lib/utils';
 import { NODE_CONFIGS } from '@/types/nodes';
 import { NodeType } from '@/types';
+import { canConnect, getHandleType, wouldCreateCycle } from '@/lib/utils'
+import Toast from '../ui/Toast';
 
 function FlowCanvas() {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
+    const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'error' | 'success' | 'info' }>>([]);
     const {
         nodes,
         edges,
@@ -127,19 +129,44 @@ function FlowCanvas() {
 
     // Validate connections before allowing them
     const isValidConnection = useCallback((connection: any) => {
-        // Find source and target nodes
         const sourceNode = nodes.find((n) => n.id === connection.source);
         const targetNode = nodes.find((n) => n.id === connection.target);
 
         if (!sourceNode || !targetNode) return false;
 
-        // Get handle types from connection
-        const sourceHandleType = connection.sourceHandle || 'text';
-        const targetHandleType = connection.targetHandle || 'text';
+        if (connection.source === connection.target) {
+            setToasts((prev) => [...prev, {
+                id: Date.now().toString(),
+                message: 'Cannot connect a node to itself',
+                type: 'error',
+            }]);
+            return false;
+        }
 
-        // Check if connection is valid
-        return canConnect(sourceHandleType, targetHandleType);
-    }, [nodes]);
+        if (wouldCreateCycle(connection.source, connection.target, edges)) {
+            setToasts((prev) => [...prev, {
+                id: Date.now().toString(),
+                message: 'Connection would create a circular dependency',
+                type: 'error',
+            }]);
+            return false;
+        }
+
+        const sourceHandleType = getHandleType(sourceNode.type!, connection.sourceHandle || 'output');
+        const targetHandleType = getHandleType(targetNode.type!, connection.targetHandle || 'input');
+
+        const isCompatible = canConnect(sourceHandleType, targetHandleType);
+
+        if (!isCompatible) {
+            setToasts((prev) => [...prev, {
+                id: Date.now().toString(),
+                message: `Incompatible types: ${sourceHandleType} cannot connect to ${targetHandleType}`,
+                type: 'error',
+            }]);
+        }
+
+        return isCompatible;
+    }, [nodes, edges]);
 
     // Handle selection changes
     const onSelectionChange = useCallback(
@@ -268,20 +295,50 @@ function FlowCanvas() {
                 />
 
                 {/* Info panel */}
-                <Panel position="top-left" className="bg-weavy-gray border border-gray-700 rounded-lg p-3 m-4">
-                    <div className="text-white text-sm">
-                        <p className="font-medium mb-2">Canvas Controls:</p>
-                        <ul className="text-xs text-gray-400 space-y-1">
-                            <li><strong>Click</strong> node button or <strong>drag</strong> to canvas</li>
-                            <li><strong>Drag</strong> nodes to reposition</li>
-                            <li><strong>Connect</strong> output to input handles</li>
-                            <li><strong>Scroll</strong> to zoom in/out</li>
-                            <li><strong>Delete/Backspace</strong> to remove selected items</li>
-                            <li><strong>Click background</strong> to deselect</li>
+                <Panel position="top-left" className="bg-weavy-gray/90 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-xl p-4 m-4">
+                    <div className="text-white">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            <p className="font-bold text-sm">Canvas Controls</p>
+                        </div>
+                        <ul className="text-xs text-gray-300 space-y-2">
+                            <li className="flex items-start gap-2">
+                                <span className="text-weavy-purple font-mono">•</span>
+                                <span><strong className="text-white">Click</strong> node button or <strong className="text-white">drag</strong> to canvas</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-weavy-purple font-mono">•</span>
+                                <span><strong className="text-white">Drag</strong> nodes to reposition</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-weavy-purple font-mono">•</span>
+                                <span><strong className="text-white">Connect</strong> output → input handles</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-weavy-purple font-mono">•</span>
+                                <span><strong className="text-white">Scroll</strong> to zoom in/out</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-weavy-purple font-mono">•</span>
+                                <span><strong className="text-white">Delete/Backspace</strong> to remove</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-weavy-purple font-mono">•</span>
+                                <span><strong className="text-white">Click background</strong> to deselect</span>
+                            </li>
                         </ul>
                     </div>
                 </Panel>
             </ReactFlow>
+            {/* Toast Notifications */}
+            {toasts.map((toast) => (
+                <Toast
+                    key={toast.id}
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+                />
+            ))}
         </div >
     );
 }

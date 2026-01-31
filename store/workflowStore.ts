@@ -8,6 +8,7 @@ interface WorkflowState {
   selectedNodes: string[];
   isRunning: boolean;
   runningNodes: Set<string>;
+  connectionErrors: string[];
   
   // Actions
   setNodes: (nodes: Node[]) => void;
@@ -22,7 +23,11 @@ interface WorkflowState {
   removeRunningNode: (nodeId: string) => void;
   clearRunningNodes: () => void;
   resetWorkflow: () => void;
-  // deleteNode: (id: string) => void;
+  addConnectionError: (error: string) => void;
+  clearConnectionErrors: () => void;
+  // New: Get connected nodes
+  getConnectedInputs: (nodeId: string) => Record<string, string>;
+  getConnectedOutputs: (nodeId: string) => string[];
 }
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => ({
@@ -31,6 +36,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   selectedNodes: [],
   isRunning: false,
   runningNodes: new Set<string>(),
+  connectionErrors: [],
 
   setNodes: (nodes) => set({ nodes }),
   
@@ -52,6 +58,19 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   })),
   
   onConnect: (connection) => set((state) => {
+    // Check if connection already exists
+    const existingEdge = state.edges.find(
+      (edge) =>
+        edge.source === connection.source &&
+        edge.target === connection.target &&
+        edge.sourceHandle === connection.sourceHandle &&
+        edge.targetHandle === connection.targetHandle
+    );
+
+    if (existingEdge) {
+      return state; // Don't add duplicate
+    }
+
     const newEdge: Edge = {
       id: uuidv4(),
       source: connection.source!,
@@ -60,7 +79,9 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       targetHandle: connection.targetHandle,
       type: 'default',
       animated: true,
+      style: { stroke: '#8B5CF6', strokeWidth: 2 },
     };
+    
     return { edges: [...state.edges, newEdge] };
   }),
   
@@ -87,6 +108,38 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     edges: [],
     selectedNodes: [],
     isRunning: false,
-    runningNodes: new Set<string>()
+    runningNodes: new Set<string>(),
+    connectionErrors: [],
   }),
+
+  addConnectionError: (error) => set((state) => ({
+    connectionErrors: [...state.connectionErrors, error]
+  })),
+
+  clearConnectionErrors: () => set({ connectionErrors: [] }),
+
+  // Get all inputs connected to a node
+  getConnectedInputs: (nodeId) => {
+    const state = get();
+    const connectedInputs: Record<string, string> = {};
+    
+    state.edges.forEach((edge) => {
+      if (edge.target === nodeId) {
+        const sourceNode = state.nodes.find((n) => n.id === edge.source);
+        if (sourceNode && edge.targetHandle) {
+          connectedInputs[edge.targetHandle] = edge.source;
+        }
+      }
+    });
+    
+    return connectedInputs;
+  },
+
+  // Get all nodes connected to outputs of a node
+  getConnectedOutputs: (nodeId) => {
+    const state = get();
+    return state.edges
+      .filter((edge) => edge.source === nodeId)
+      .map((edge) => edge.target);
+  },
 }));
