@@ -14,6 +14,9 @@ interface WorkflowState {
   workflowName: string;
   isSaved: boolean;
   lastSavedAt: Date | null;
+
+  isLeftSidebarCollapsed: boolean;
+  isRightSidebarCollapsed: boolean;
   // Actions
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
@@ -39,6 +42,10 @@ interface WorkflowState {
   markAsUnsaved: () => void;
   loadWorkflow: (workflow: { id: string; name: string; nodes: any[]; edges: any[] }) => void;
   clearWorkflow: () => void;
+  toggleLeftSidebar: () => void;
+  toggleRightSidebar: () => void;
+  setLeftSidebarCollapsed: (collapsed: boolean) => void;
+  setRightSidebarCollapsed: (collapsed: boolean) => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => ({
@@ -49,35 +56,36 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   isRunning: false,
   runningNodes: new Set<string>(),
   connectionErrors: [],
-  
+
   // New: Workflow metadata initial state
   workflowId: null,
   workflowName: 'Untitled Workflow',
   isSaved: true,
   lastSavedAt: null,
-
+  isLeftSidebarCollapsed: false,
+  isRightSidebarCollapsed: false,
   setNodes: (nodes) => set({ nodes, isSaved: false }),
-  
+
   setEdges: (edges) => set({ edges, isSaved: false }),
-  
+
   addNode: (node) => set((state) => ({
     nodes: [...state.nodes, { ...node, id: node.id || uuidv4() }],
     isSaved: false,
   })),
-  
+
   updateNode: (id, data) => set((state) => ({
     nodes: state.nodes.map((node) =>
       node.id === id ? { ...node, data: { ...node.data, ...data } } : node
     ),
     isSaved: false,
   })),
-  
+
   deleteNode: (id) => set((state) => ({
     nodes: state.nodes.filter((node) => node.id !== id),
     edges: state.edges.filter((edge) => edge.source !== id && edge.target !== id),
     isSaved: false,
   })),
-  
+
   onConnect: (connection) => set((state) => {
     const existingEdge = state.edges.find(
       (edge) =>
@@ -101,28 +109,28 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       animated: true,
       style: { stroke: '#8B5CF6', strokeWidth: 2 },
     };
-    
+
     return { edges: [...state.edges, newEdge], isSaved: false };
   }),
-  
+
   setSelectedNodes: (nodeIds) => set({ selectedNodes: nodeIds }),
-  
+
   setIsRunning: (isRunning) => set({ isRunning }),
-  
+
   addRunningNode: (nodeId) => set((state) => {
     const newRunningNodes = new Set(state.runningNodes);
     newRunningNodes.add(nodeId);
     return { runningNodes: newRunningNodes };
   }),
-  
+
   removeRunningNode: (nodeId) => set((state) => {
     const newRunningNodes = new Set(state.runningNodes);
     newRunningNodes.delete(nodeId);
     return { runningNodes: newRunningNodes };
   }),
-  
+
   clearRunningNodes: () => set({ runningNodes: new Set<string>() }),
-  
+
   resetWorkflow: () => set({
     nodes: [],
     edges: [],
@@ -145,7 +153,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   getConnectedInputs: (nodeId) => {
     const state = get();
     const connectedInputs: Record<string, string> = {};
-    
+
     state.edges.forEach((edge) => {
       if (edge.target === nodeId) {
         const sourceNode = state.nodes.find((n) => n.id === edge.source);
@@ -154,7 +162,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         }
       }
     });
-    
+
     return connectedInputs;
   },
 
@@ -167,13 +175,13 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   // New: Workflow management actions
   setWorkflowId: (id) => set({ workflowId: id }),
-  
+
   setWorkflowName: (name) => set({ workflowName: name, isSaved: false }),
-  
+
   markAsSaved: () => set({ isSaved: true, lastSavedAt: new Date() }),
-  
+
   markAsUnsaved: () => set({ isSaved: false }),
-  
+
   loadWorkflow: (workflow) => set({
     workflowId: workflow.id,
     workflowName: workflow.name,
@@ -185,7 +193,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     isRunning: false,
     runningNodes: new Set<string>(),
   }),
-  
+
   clearWorkflow: () => set({
     nodes: [],
     edges: [],
@@ -197,5 +205,20 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     workflowName: 'Untitled Workflow',
     isSaved: true,
     lastSavedAt: null,
+  }),
+  toggleLeftSidebar: () => set((state) => ({
+    isLeftSidebarCollapsed: !state.isLeftSidebarCollapsed
+  })),
+
+  toggleRightSidebar: () => set((state) => ({
+    isRightSidebarCollapsed: !state.isRightSidebarCollapsed
+  })),
+
+  setLeftSidebarCollapsed: (collapsed) => set({
+    isLeftSidebarCollapsed: collapsed
+  }),
+
+  setRightSidebarCollapsed: (collapsed) => set({
+    isRightSidebarCollapsed: collapsed
   }),
 }));

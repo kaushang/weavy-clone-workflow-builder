@@ -9,12 +9,45 @@ import { useState } from 'react';
 import { FolderOpen } from 'lucide-react';
 import LoadWorkflowDialog from './ui/LoadWorkflowDialog';
 import { useWorkflowExecution } from '@/hooks/useWorkflowExecution';
+import { SAMPLE_WORKFLOW } from '@/lib/samples/sample-workflow';
+import { Lightbulb } from 'lucide-react';
 
 export default function Navbar() {
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const isSaved = useWorkflowStore((state) => state.isSaved);
-  const { isExecuting, executeWorkflow } = useWorkflowExecution();
+  const { isExecuting, executionProgress, executeWorkflow } = useWorkflowExecution();
 
+  const loadSampleWorkflow = () => {
+    const { setNodes, setEdges, setWorkflowName } = useWorkflowStore.getState();
+    setNodes(SAMPLE_WORKFLOW.nodes as any[]);
+    setEdges(SAMPLE_WORKFLOW.edges as any[]);
+    setWorkflowName(SAMPLE_WORKFLOW.name);
+  };
+
+  const handleExport = () => {
+    const { nodes, edges, workflowName } = useWorkflowStore.getState();
+
+    const exportData = {
+      name: workflowName,
+      nodes,
+      edges,
+      exportedAt: new Date().toISOString(),
+      version: '1.0.0',
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: 'application/json',
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${workflowName.replace(/\s+/g, '-').toLowerCase()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
   return (
     <nav className="absolute top-0 left-0 right-0 z-50 bg-weavy-gray/95 backdrop-blur-sm border-b border-gray-700/50 shadow-lg">
       <div className="flex items-center justify-between px-6 py-3">
@@ -54,7 +87,10 @@ export default function Navbar() {
             {isExecuting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Running...
+                {executionProgress
+                  ? `Running (${executionProgress.current}/${executionProgress.total})...`
+                  : 'Running...'
+                }
               </>
             ) : (
               <>
@@ -73,12 +109,22 @@ export default function Navbar() {
 
           <SaveButton />
 
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-gray-700/50 hover:bg-gray-600 text-white rounded-lg transition-all border border-gray-600 hover:border-gray-500">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gray-700/50 hover:bg-gray-600 text-white rounded-lg transition-all border border-gray-600 hover:border-gray-500"
+          >
             <Download className="w-4 h-4" />
             Export
           </button>
         </div>
-
+        <button
+          onClick={loadSampleWorkflow}
+          className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-all border border-amber-500 hover:border-amber-400"
+          title="Load sample workflow"
+        >
+          <Lightbulb className="w-4 h-4" />
+          Sample
+        </button>
         {/* Right: User Button */}
         <div className="flex items-center gap-3">
           <div className="h-8 w-px bg-gray-700" />
@@ -95,4 +141,4 @@ export default function Navbar() {
 
     </nav>
   );
-}
+}   

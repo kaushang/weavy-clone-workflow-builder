@@ -88,7 +88,7 @@ function BaseNode({ id, data, children, color, inputs = [], outputs = [], onOpen
       {inputs.map((input, index) => {
         const isConnected = !!connectedInputs[input.id];
         const topPercentage = ((index + 1) * 100) / (inputs.length + 1);
-
+        console.log(input.id);
         return (
           <EnhancedHandle
             key={input.id}

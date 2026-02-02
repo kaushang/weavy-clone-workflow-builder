@@ -6,6 +6,8 @@ import WorkflowCanvas from "@/components/canvas/WorkflowCanvas";
 import HistoryPanel from "@/components/history/HistoryPanel";
 import Navbar from "@/components/Navbar";
 import AutoSaveWrapper from "@/components/AutoSaveWrapper";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 
 export default async function WorkflowPage() {
   const user = await currentUser();
@@ -15,20 +17,23 @@ export default async function WorkflowPage() {
   }
 
   return (
-    <AutoSaveWrapper>
-      <div className="relative h-screen w-full">
-        {/* Top Navbar */}
-        <Navbar />
+    <ErrorBoundary>
+      <AutoSaveWrapper>
+        <KeyboardShortcuts />
+        <div className="relative h-screen w-full">
+          {/* Top Navbar */}
+          <Navbar />
 
-        {/* Main Layout (with top padding for navbar) */}
-        <div className="pt-16 h-full">
-          <WorkflowLayout
-            sidebar={<LeftSidebar />}
-            canvas={<WorkflowCanvas />}
-            history={<HistoryPanel />}
-          />
+          {/* Main Layout (with top padding for navbar) */}
+          <div className="pt-16 h-full">
+            <WorkflowLayout
+              sidebar={<LeftSidebar />}
+              canvas={<WorkflowCanvas />}
+              history={<HistoryPanel />}
+            />
+          </div>
         </div>
-      </div>
-    </AutoSaveWrapper>
+      </AutoSaveWrapper>
+    </ErrorBoundary>
   );
 }

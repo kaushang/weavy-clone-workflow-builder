@@ -12,9 +12,9 @@ export default function WorkflowLayout({ sidebar, canvas, history }: WorkflowLay
   return (
     <div className="flex h-screen w-full bg-weavy-dark overflow-hidden">
       {/* Left Sidebar */}
-      <aside className="w-64 bg-weavy-gray border-r border-gray-700 flex-shrink-0">
+      {/* <aside className="w-64 bg-weavy-gray border-r border-gray-700 flex-shrink-0"> */}
         {sidebar}
-      </aside>
+      {/* </aside> */}
 
       {/* Main Canvas Area */}
       <main className="flex-1 relative">
@@ -22,9 +22,9 @@ export default function WorkflowLayout({ sidebar, canvas, history }: WorkflowLay
       </main>
 
       {/* Right Sidebar (History) */}
-      <aside className="w-80 bg-weavy-gray border-l border-gray-700 flex-shrink-0">
+      {/* <aside className="w-80 bg-weavy-gray border-l border-gray-700 flex-shrink-0"> */}
         {history}
-      </aside>
+      {/* </aside> */}
     </div>
   );
 }

@@ -1,13 +1,21 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useWorkflowStore } from '@/store/workflowStore';
 import axios from 'axios';
+import { WorkflowEngine } from '@/lib/execution/workflow-engine';
+import { ExecutionStateManager } from '@/lib/execution/execution-state';
 import { cropImage } from '@/lib/services/image-service';
 import { extractFrame } from '@/lib/services/video-service';
+import { saveWorkflowRun } from '@/lib/services/history-service';
 
 export function useWorkflowExecution() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionError, setExecutionError] = useState<string | null>(null);
-  
+  const [executionProgress, setExecutionProgress] = useState<{
+    current: number;
+    total: number;
+    currentNode: string;
+  } | null>(null);
+
   const {
     nodes,
     edges,
@@ -17,55 +25,32 @@ export function useWorkflowExecution() {
     setIsRunning,
   } = useWorkflowStore();
 
-  const executeNode = async (nodeId: string) => {
+  const executeNode = useCallback(async (nodeId: string, stateManager: ExecutionStateManager) => {
     const node = nodes.find(n => n.id === nodeId);
     if (!node) {
       console.error('Node not found:', nodeId);
       return;
     }
 
-    console.log(`▶️ Processing node: ${node.data.label} (${node.type})`); // 3
+    console.log(`▶️ Processing node: ${node.data.label} (${node.type})`);
 
     // Skip execution for input-only nodes
     if (['textNode', 'uploadImage', 'uploadVideo'].includes(node.type!)) {
       console.log(`⏭️ Skipping execution for input node: ${node.data.label}`);
+      stateManager.setNodeState(nodeId, 'success');
       return { status: 'success', message: 'Input node - no execution needed' };
     }
-    
+
+    stateManager.setNodeState(nodeId, 'running', { startTime: Date.now() });
     addRunningNode(nodeId);
 
     try {
-      // Get connected inputs
-      const connectedInputs: Record<string, any> = {};
-      edges.forEach(edge => {
-        if (edge.target === nodeId && edge.targetHandle) {
-          const sourceNode = nodes.find(n => n.id === edge.source);
-          if (sourceNode) {
-            console.log(`📎 Connected input ${edge.targetHandle} from ${sourceNode.data.label}`); // 4
-            
-            // Get the output data from source node
-            let outputValue = '';
-            
-            if (sourceNode.type === 'textNode') {
-              outputValue = sourceNode.data.text || '';
-            } else if (sourceNode.type === 'uploadImage') {
-              outputValue = sourceNode.data.imageUrl || '';
-            } else if (sourceNode.type === 'uploadVideo') {
-              outputValue = sourceNode.data.videoUrl || '';
-            } else {
-              outputValue = sourceNode.data.result || '';
-            }
-            
-            console.log(`   Value: "${outputValue.substring(0, 50)}${outputValue.length > 50 ? '...' : ''}"`);  // 5
-            console.log(`   Target handle: ${edge.targetHandle}`); // 6
-            
-            connectedInputs[edge.targetHandle] = outputValue;
-          }
-        }
-      });
+      // Get connected inputs using engine
+      const engine = new WorkflowEngine(nodes, edges);
+      const connectedInputs = engine.getConnectedInputs(nodeId, nodes);
 
-      console.log('📋 Node type:', node.type); // 7
-      console.log('📋 Connected inputs:', Object.keys(connectedInputs)); // 8
+      console.log('📋 Node type:', node.type);
+      console.log('📋 Connected inputs:', Object.keys(connectedInputs));
 
       // Execute the node
       const response = await axios.post('/api/workflows/run', {
@@ -75,64 +60,70 @@ export function useWorkflowExecution() {
         connectedInputs,
       });
 
-      console.log('✅ API response received'); // 9
+      console.log('✅ API response received');
 
       const { result } = response.data;
 
-      // Update node with result
       // Handle client-side processing
       if (result.cropParams) {
         console.log('✂️ Processing crop on client side...');
         try {
           const cropResult = await cropImage(result.cropParams);
-          updateNode(nodeId, { 
+          updateNode(nodeId, {
             croppedUrl: cropResult.croppedUrl,
             result: 'Image cropped successfully',
           });
+          stateManager.setNodeState(nodeId, 'success', { result: cropResult });
           console.log(`✅ Node ${node.data.label} completed (cropped)`);
         } catch (error: any) {
           updateNode(nodeId, { error: error.message });
+          stateManager.setNodeState(nodeId, 'failed', { error: error.message });
           console.error(`❌ Crop failed:`, error);
+          throw error;
         }
       } else if (result.extractParams) {
         console.log('🎬 Processing frame extraction on client side...');
         try {
           const frameResult = await extractFrame(result.extractParams);
-          updateNode(nodeId, { 
+          updateNode(nodeId, {
             frameUrl: frameResult.frameUrl,
             result: 'Frame extracted successfully',
           });
+          stateManager.setNodeState(nodeId, 'success', { result: frameResult });
           console.log(`✅ Node ${node.data.label} completed (frame extracted)`);
         } catch (error: any) {
           updateNode(nodeId, { error: error.message });
+          stateManager.setNodeState(nodeId, 'failed', { error: error.message });
           console.error(`❌ Frame extraction failed:`, error);
+          throw error;
         }
-      } else if (result.status === 'success') { 
+      } else if (result.status === 'success') {
         updateNode(nodeId, { result: result.response });
+        stateManager.setNodeState(nodeId, 'success', { result });
         console.log(`✅ Node ${node.data.label} completed`);
       } else {
         updateNode(nodeId, { error: result.error });
-        console.error(`❌ Node ${node.data.label} failed:`, result.error); // 10
+        stateManager.setNodeState(nodeId, 'failed', { error: result.error });
+        console.error(`❌ Node ${node.data.label} failed:`, result.error);
+        throw new Error(result.error);
       }
 
       return result;
     } catch (error: any) {
       console.error(`❌ Error executing node ${nodeId}:`, error);
       console.error('Error response:', error.response?.data);
-      
+
       const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
       updateNode(nodeId, { error: errorMessage });
-      
-      // Show user-friendly alert
-      alert(`Error executing ${node.data.label}: ${errorMessage}`);
-      
+      stateManager.setNodeState(nodeId, 'failed', { error: errorMessage });
+
       throw error;
     } finally {
       removeRunningNode(nodeId);
     }
-  };
+  }, [nodes, edges, addRunningNode, removeRunningNode, updateNode]);
 
-  const executeWorkflow = async () => {
+  const executeWorkflow = useCallback(async () => {
     if (nodes.length === 0) {
       alert('Add nodes to the workflow first');
       return;
@@ -141,40 +132,104 @@ export function useWorkflowExecution() {
     setIsExecuting(true);
     setIsRunning(true);
     setExecutionError(null);
+    setExecutionProgress(null);
+
+    const stateManager = new ExecutionStateManager();
 
     try {
-      console.log('🚀 Starting workflow execution...'); // 1
+      console.log('🚀 Starting workflow execution with engine...');
 
-      // Find execution nodes (LLM, Crop, Extract Frame)
-      const executionNodes = nodes.filter(node => 
-        ['llmNode', 'cropImage', 'extractFrame'].includes(node.type!)
-      );
+      // Create workflow engine
+      const engine = new WorkflowEngine(nodes, edges);
 
-      if (executionNodes.length === 0) {
-        alert('Add at least one processing node (LLM, Crop Image, or Extract Frame)');
+      // Validate workflow
+      const validation = engine.validateWorkflow();
+      if (!validation.valid) {
+        const errorMsg = validation.errors.join('\n');
+        alert(`Workflow validation failed:\n${errorMsg}`);
+        setExecutionError(errorMsg);
         return;
       }
 
-      console.log(`📊 Found ${executionNodes.length} execution node(s)`); // 2
+      // Build execution plan
+      const plan = engine.buildExecutionPlan();
+      console.log(`📊 Execution plan: ${plan.levels.length} levels, ${plan.totalNodes} nodes`);
 
-      // Execute all processing nodes
-      for (const node of executionNodes) {
-        await executeNode(node.id);
+      plan.levels.forEach((level, index) => {
+        console.log(`  Level ${index}: ${level.map(n => n.data.label).join(', ')}`);
+      });
+
+      let completed = 0;
+
+      // Execute level by level
+      for (let levelIndex = 0; levelIndex < plan.levels.length; levelIndex++) {
+        const level = plan.levels[levelIndex];
+        console.log(`\n🔄 Executing level ${levelIndex} (${level.length} nodes in parallel)...`);
+
+        // Execute all nodes in this level in parallel
+        const promises = level.map(async (execNode) => {
+          setExecutionProgress({
+            current: completed + 1,
+            total: plan.totalNodes,
+            currentNode: execNode.data.label,
+          });
+
+          // Skip input nodes
+          if (['textNode', 'uploadImage', 'uploadVideo'].includes(execNode.type)) {
+            return;
+          }
+
+          await executeNode(execNode.id, stateManager);
+          completed++;
+        });
+
+        // Wait for all nodes in this level to complete
+        await Promise.all(promises);
+
+        console.log(`✅ Level ${levelIndex} completed`);
       }
 
-      console.log('✅ Workflow execution completed'); // 11
+      // Get final stats
+      const stats = stateManager.getStats();
+      console.log('\n📈 Execution Stats:', stats);
+      console.log('✅ Workflow execution completed successfully');
+        
+      // Save workflow run to history
+      if (useWorkflowStore.getState().workflowId) {
+        try {
+          await saveWorkflowRun(
+            useWorkflowStore.getState().workflowId!,
+            stats.failed > 0 ? 'failed' : 'success',
+            stats.totalDuration,
+            Array.from(stateManager.getAllStates().values())
+          );
+          console.log('💾 Workflow run saved to history');
+        } catch (error) {
+          console.error('Failed to save workflow run:', error);
+        }
+      }
+
+      if (stats.failed > 0) {
+        setExecutionError(`${stats.failed} node(s) failed`);
+      }
+
+      if (stats.failed > 0) {
+        setExecutionError(`${stats.failed} node(s) failed`);
+      }
     } catch (error: any) {
-      console.error('❌ Workflow execution failed:', error); 
+      console.error('❌ Workflow execution failed:', error);
       setExecutionError(error.message);
     } finally {
       setIsExecuting(false);
       setIsRunning(false);
+      setExecutionProgress(null);
     }
-  };
+  }, [nodes, edges, executeNode, setIsRunning]);
 
   return {
     isExecuting,
     executionError,
+    executionProgress,
     executeNode,
     executeWorkflow,
   };
