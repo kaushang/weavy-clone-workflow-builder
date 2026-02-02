@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useWorkflowStore } from '@/store/workflowStore';
 import axios from 'axios';
+import { cropImage } from '@/lib/services/image-service';
+import { extractFrame } from '@/lib/services/video-service';
 
 export function useWorkflowExecution() {
   const [isExecuting, setIsExecuting] = useState(false);
@@ -78,7 +80,34 @@ export function useWorkflowExecution() {
       const { result } = response.data;
 
       // Update node with result
-      if (result.status === 'success') { 
+      // Handle client-side processing
+      if (result.cropParams) {
+        console.log('✂️ Processing crop on client side...');
+        try {
+          const cropResult = await cropImage(result.cropParams);
+          updateNode(nodeId, { 
+            croppedUrl: cropResult.croppedUrl,
+            result: 'Image cropped successfully',
+          });
+          console.log(`✅ Node ${node.data.label} completed (cropped)`);
+        } catch (error: any) {
+          updateNode(nodeId, { error: error.message });
+          console.error(`❌ Crop failed:`, error);
+        }
+      } else if (result.extractParams) {
+        console.log('🎬 Processing frame extraction on client side...');
+        try {
+          const frameResult = await extractFrame(result.extractParams);
+          updateNode(nodeId, { 
+            frameUrl: frameResult.frameUrl,
+            result: 'Frame extracted successfully',
+          });
+          console.log(`✅ Node ${node.data.label} completed (frame extracted)`);
+        } catch (error: any) {
+          updateNode(nodeId, { error: error.message });
+          console.error(`❌ Frame extraction failed:`, error);
+        }
+      } else if (result.status === 'success') { 
         updateNode(nodeId, { result: result.response });
         console.log(`✅ Node ${node.data.label} completed`);
       } else {

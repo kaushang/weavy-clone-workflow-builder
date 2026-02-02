@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    console.log('📥 Received workflow run request:', JSON.stringify(body, null, 2)); // 11
+    console.log('📥 Received workflow run request:', JSON.stringify(body, null, 2));
     
     const { nodeId, nodeType, nodeData, connectedInputs } = body;
 
@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
     // Execute based on node type
     switch (nodeType) {
       case 'llmNode':
-        console.log('🤖 Executing LLM node...'); // 12
+        console.log('🤖 Executing LLM node...');
         
-        const userMessage = connectedInputs?.userMessage || nodeData?.userMessage || "Write a poem about elephant";
+        const userMessage = connectedInputs?.userMessage || nodeData?.userMessage;
         
         if (!userMessage) {
           console.error('❌ No user message provided');
@@ -41,8 +41,7 @@ export async function POST(request: NextRequest) {
 
         result = await executeLLM({
           nodeId,
-          // model: nodeData?.selectedModel || 'gemini-pro',
-          model: 'gemini-pro',
+          model: nodeData?.selectedModel || 'gemini-1.5-flash',
           systemPrompt: nodeData?.systemPromptOverride || connectedInputs?.systemPrompt,
           userMessage: userMessage,
           images: connectedInputs?.images ? [connectedInputs.images] : undefined,
@@ -50,7 +49,62 @@ export async function POST(request: NextRequest) {
           maxTokens: nodeData?.maxTokens || 1000,
         });
         
-        console.log('✅ LLM execution result:', result); // 17
+        console.log('✅ LLM execution result:', result);
+        break;
+
+      case 'cropImage':
+        console.log('✂️ Executing Crop Image node...');
+        
+        const imageUrl = connectedInputs?.image;
+        
+        if (!imageUrl) {
+          console.error('❌ No image provided');
+          return NextResponse.json({ 
+            error: 'Crop Image node requires an image input' 
+          }, { status: 400 });
+        }
+
+        // Return params for client-side cropping
+        result = {
+          nodeId,
+          status: 'success',
+          response: 'Crop params ready',
+          cropParams: {
+            imageUrl,
+            xPercent: nodeData?.xPercent || 0,
+            yPercent: nodeData?.yPercent || 0,
+            widthPercent: nodeData?.widthPercent || 100,
+            heightPercent: nodeData?.heightPercent || 100,
+          },
+        };
+        
+        console.log('✅ Crop Image params prepared');
+        break;
+
+      case 'extractFrame':
+        console.log('🎬 Executing Extract Frame node...');
+        
+        const videoUrl = connectedInputs?.video;
+        
+        if (!videoUrl) {
+          console.error('❌ No video provided');
+          return NextResponse.json({ 
+            error: 'Extract Frame node requires a video input' 
+          }, { status: 400 });
+        }
+
+        // Return params for client-side extraction
+        result = {
+          nodeId,
+          status: 'success',
+          response: 'Frame extraction params ready',
+          extractParams: {
+            videoUrl,
+            timestamp: nodeData?.timestamp || '50%',
+          },
+        };
+        
+        console.log('✅ Extract Frame params prepared');
         break;
         
       case 'textNode':
