@@ -1,32 +1,29 @@
 'use client';
-// import { useCallback, useRef, useEffect } from 'react';
-import { useCallback, useRef, useEffect, useState } from 'react';
-import { useMemo } from 'react';
+import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
+import ReactFlow, {
+  Background,
+  Controls,
+  MiniMap,
+  BackgroundVariant,
+  ReactFlowProvider,
+  Panel,
+  useReactFlow,
+} from 'reactflow';
+import 'reactflow/dist/style.css';
+import { useWorkflowStore } from '@/store/workflowStore';
+import { canConnect, getHandleType, wouldCreateCycle, generateNodeId } from '@/lib/utils';
+import { NODE_CONFIGS } from '@/types/nodes';
+import { NodeType } from '@/types';
 import TextNode from '../nodes/TextNode';
 import UploadImageNode from '../nodes/UploadImageNode';
 import UploadVideoNode from '../nodes/UploadVideoNode';
 import LLMNode from '../nodes/LLMNode';
 import CropImageNode from '../nodes/CropImageNode';
 import ExtractFrameNode from '../nodes/ExtractFrameNode';
-import ReactFlow, {
-    Background,
-    Controls,
-    MiniMap,
-    BackgroundVariant,
-    ReactFlowProvider,
-    Panel,
-    useReactFlow
-} from 'reactflow';
-import 'reactflow/dist/style.css';
-import { useWorkflowStore } from '@/store/workflowStore';
-import { generateNodeId } from '@/lib/utils';
-import { NODE_CONFIGS } from '@/types/nodes';
-import { NodeType } from '@/types';
-import { canConnect, getHandleType, wouldCreateCycle } from '@/lib/utils'
-import Toast from '../ui/Toast';
-import HandleLegend from '../ui/HandleLegend';
-import ConnectionFlowIndicator from './ConnectionFlowIndicator';
 import DataFlowEdge from './DataFlowEdge';
+import ConnectionFlowIndicator from './ConnectionFlowIndicator';
+import HandleLegend from '../ui/HandleLegend';
+import Toast from '../ui/Toast';
 function FlowCanvas() {
     const [connectionAttempt, setConnectionAttempt] = useState<{
         sourceNode: string;
@@ -139,56 +136,73 @@ function FlowCanvas() {
         [edges, setEdges]
     );
 
-    const isValidConnection = useCallback((connection: any) => {
-        const sourceNode = nodes.find((n) => n.id === connection.source);
-        const targetNode = nodes.find((n) => n.id === connection.target);
+const isValidConnection = useCallback((connection: any) => {
+    const sourceNode = nodes.find((n) => n.id === connection.source);
+    const targetNode = nodes.find((n) => n.id === connection.target);
 
-        if (!sourceNode || !targetNode) return false;
+    if (!sourceNode || !targetNode) {
+      console.log('❌ Source or target node not found');
+      return false;
+    }
 
-        const sourceHandleType = getHandleType(sourceNode.type!, connection.sourceHandle || 'output');
-        const targetHandleType = getHandleType(targetNode.type!, connection.targetHandle || 'input');
+    const sourceHandleType = getHandleType(
+      sourceNode.type!, 
+      connection.sourceHandle || 'output'
+    );
+    const targetHandleType = getHandleType(
+      targetNode.type!, 
+      connection.targetHandle || 'input'
+    );
 
-        const isCompatible = canConnect(sourceHandleType, targetHandleType);
+    console.log(`🔍 Connection attempt:`, {
+      source: sourceNode.type,
+      sourceHandle: connection.sourceHandle,
+      sourceType: sourceHandleType,
+      target: targetNode.type,
+      targetHandle: connection.targetHandle,
+      targetType: targetHandleType,
+    });
 
-        // Show connection indicator
-        setConnectionAttempt({
-            sourceNode: sourceNode.data.label,
-            targetNode: targetNode.data.label,
-            handleType: sourceHandleType,
-            isValid: isCompatible,
-        });
+    const isCompatible = canConnect(sourceHandleType, targetHandleType);
 
-        // Clear after delay
-        setTimeout(() => setConnectionAttempt(null), 2000);
+    // Show connection indicator
+    setConnectionAttempt({
+      sourceNode: sourceNode.data.label,
+      targetNode: targetNode.data.label,
+      handleType: sourceHandleType,
+      isValid: isCompatible,
+    });
 
-        if (connection.source === connection.target) {
-            setToasts((prev) => [...prev, {
-                id: Date.now().toString(),
-                message: 'Cannot connect a node to itself',
-                type: 'error',
-            }]);
-            return false;
-        }
+    setTimeout(() => setConnectionAttempt(null), 2000);
 
-        if (wouldCreateCycle(connection.source, connection.target, edges)) {
-            setToasts((prev) => [...prev, {
-                id: Date.now().toString(),
-                message: 'Connection would create a circular dependency',
-                type: 'error',
-            }]);
-            return false;
-        }
+    if (connection.source === connection.target) {
+      setToasts((prev) => [...prev, {
+        id: Date.now().toString(),
+        message: 'Cannot connect a node to itself',
+        type: 'error',
+      }]);
+      return false;
+    }
 
-        if (!isCompatible) {
-            setToasts((prev) => [...prev, {
-                id: Date.now().toString(),
-                message: `Incompatible types: ${sourceHandleType} → ${targetHandleType}`,
-                type: 'error',
-            }]);
-        }
+    if (wouldCreateCycle(connection.source, connection.target, edges)) {
+      setToasts((prev) => [...prev, {
+        id: Date.now().toString(),
+        message: 'Connection would create a circular dependency',
+        type: 'error',
+      }]);
+      return false;
+    }
+    
+    if (!isCompatible) {
+      setToasts((prev) => [...prev, {
+        id: Date.now().toString(),
+        message: `Incompatible types: ${sourceHandleType} → ${targetHandleType}`,
+        type: 'error',
+      }]);
+    }
 
-        return isCompatible;
-    }, [nodes, edges]);
+    return isCompatible;
+  }, [nodes, edges]);
 
     // Handle selection changes
     const onSelectionChange = useCallback(

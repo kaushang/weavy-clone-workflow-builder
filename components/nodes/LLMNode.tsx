@@ -40,11 +40,11 @@ function LLMNode({ id, data }: NodeProps) {
         data={data}
         color="#F59E0B"
         inputs={[
-          { id: 'systemPrompt', type: 'text', label: 'System Prompt' },
+          { id: 'systemPrompt', type: 'text', label: 'System Prompt', required: false },
           { id: 'userMessage', type: 'text', label: 'User Message', required: true },
-          { id: 'images', type: 'image', label: 'Images' },
+          { id: 'images', type: 'image', label: 'Images', required: false },
         ]}
-        outputs={[{ id: 'output', type: 'text', label: 'Response' }]}
+        outputs={[{ id: 'output', type: 'text', label: 'AI Response' }]}
         onOpenConfig={() => setIsConfigOpen(true)}
       >
         <div className="space-y-3">
@@ -77,7 +77,7 @@ function LLMNode({ id, data }: NodeProps) {
                   <Circle className="w-3 h-3 text-gray-600" />
                 )}
                 <span className={`text-xs ${connectedInputs.systemPrompt ? 'text-green-400' : 'text-gray-500'}`}>
-                  System Prompt {connectedInputs.systemPrompt && '(connected)'}
+                  System Prompt {connectedInputs.systemPrompt && '✓'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ function LLMNode({ id, data }: NodeProps) {
                   <Circle className="w-3 h-3 text-gray-600" />
                 )}
                 <span className={`text-xs ${connectedInputs.userMessage ? 'text-green-400' : 'text-gray-500'}`}>
-                  User Message {connectedInputs.userMessage && '(connected)'}
+                  User Message {connectedInputs.userMessage && '✓'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -97,7 +97,7 @@ function LLMNode({ id, data }: NodeProps) {
                   <Circle className="w-3 h-3 text-gray-600" />
                 )}
                 <span className={`text-xs ${connectedInputs.images ? 'text-green-400' : 'text-gray-500'}`}>
-                  Images {connectedInputs.images && '(optional, connected)'}
+                  Images (optional) {connectedInputs.images && '✓'}
                 </span>
               </div>
             </div>
@@ -176,7 +176,7 @@ function LLMNode({ id, data }: NodeProps) {
               min="100"
               max="8000"
               step="100"
-              className="w-full px-3 py-2 bg-weavy-dark text-white text-sm rounded border border-gray-600 focus:border-weavy-purple focus:outline-none"
+              className="w-full px-3 py-2 bg-weavy-dark text-white text-sm rounded border border-gray-600 focus:border-weavy-purple focus:outline-none nodrag"
             />
             <p className="text-gray-500 text-[10px] mt-1">
               Maximum length of the response (100-8000)
@@ -192,7 +192,7 @@ function LLMNode({ id, data }: NodeProps) {
               value={data.systemPromptOverride || ''}
               onChange={handleSystemPromptChange}
               placeholder="Optional: Override the system prompt..."
-              className="w-full px-3 py-2 bg-weavy-dark text-white text-sm rounded border border-gray-600 focus:border-weavy-purple focus:outline-none resize-none"
+              className="w-full px-3 py-2 bg-weavy-dark text-white text-sm rounded border border-gray-600 focus:border-weavy-purple focus:outline-none resize-none nodrag"
               rows={4}
             />
             <p className="text-gray-500 text-[10px] mt-1">

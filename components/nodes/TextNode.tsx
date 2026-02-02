@@ -11,6 +11,7 @@ function TextNode({ id, data }: NodeProps) {
 
   const handleTextChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      console.log(`📝 Text node ${id} updated:`, e.target.value);
       updateNode(id, { text: e.target.value });
     },
     [id, updateNode]
@@ -28,7 +29,7 @@ function TextNode({ id, data }: NodeProps) {
           <FileText className="w-4 h-4 text-blue-500" />
           <label className="text-gray-400 text-xs font-medium">Text Content:</label>
         </div>
-        
+
         <textarea
           value={data.text || ''}
           onChange={handleTextChange}
@@ -36,7 +37,7 @@ function TextNode({ id, data }: NodeProps) {
           className="w-full px-3 py-2 bg-weavy-dark text-white text-sm rounded border border-gray-600 focus:border-blue-500 focus:outline-none resize-none nodrag"
           rows={4}
         />
-        
+
         <div className="flex justify-between items-center">
           <p className="text-gray-500 text-xs">
             {data.text?.length || 0} characters

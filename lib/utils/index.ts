@@ -8,10 +8,10 @@ export function generateNodeId(type: string): string {
 // Enhanced connection validation
 export function canConnect(sourceType: string, targetType: string): boolean {
   const compatibilityMap: Record<string, string[]> = {
-    text: ['text'],           // Text can only connect to text inputs
-    image: ['image'],         // Image can only connect to image inputs
-    video: ['video'],         // Video can only connect to video inputs
-    url: ['image', 'url'],    // URL can connect to image or url inputs
+    text: ['text'],
+    image: ['image'],
+    video: ['video'],
+    url: ['image', 'url'],
   };
   
   return compatibilityMap[sourceType]?.includes(targetType) ?? false;
@@ -29,12 +29,15 @@ export function getHandleType(nodeType: string, handleId: string): string {
   const handleTypeMap: Record<string, Record<string, string>> = {
     textNode: {
       text: 'text',
+      output: 'text',
     },
     uploadImage: {
       image: 'image',
+      output: 'image',
     },
     uploadVideo: {
       video: 'video',
+      output: 'video',
     },
     llmNode: {
       systemPrompt: 'text',
@@ -44,10 +47,12 @@ export function getHandleType(nodeType: string, handleId: string): string {
     },
     cropImage: {
       image: 'image',
+      input: 'image',
       output: 'url',
     },
     extractFrame: {
       video: 'video',
+      input: 'video',
       output: 'url',
     },
   };

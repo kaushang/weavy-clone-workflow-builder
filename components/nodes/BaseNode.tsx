@@ -40,14 +40,13 @@ function BaseNode({ id, data, children, color, inputs = [], outputs = [], onOpen
   return (
     <div
       className={cn(
-        'bg-weavy-gray border-2 rounded-lg shadow-xl min-w-[280px] max-w-[280px] transition-all duration-200',
+        'bg-weavy-gray border-2 rounded-lg shadow-xl min-w-[280px] max-w-[280px] transition-all duration-200 relative',
         isRunning ? 'border-weavy-purple animate-pulse-glow' : 'border-gray-600 hover:border-gray-500'
       )}
       style={{
         borderColor: isRunning ? '#8B5CF6' : undefined,
       }}
     >
-      {/* Header */}
       {/* Header */}
       <div
         className="px-3 py-2 rounded-t-lg border-b border-gray-700 flex items-center justify-between"
@@ -116,7 +115,7 @@ function BaseNode({ id, data, children, color, inputs = [], outputs = [], onOpen
             handleId={output.id}
             handleType={output.type}
             label={output.label}
-            isConnected={true} // Outputs are always "ready"
+            isConnected={true}
             isSource={true}
             style={{
               top: `${topPercentage}%`,
