@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
         const genAI = new GoogleGenerativeAI(apiKey);
 
         // Validate model name
-        const modelName = payload.model || 'gemini-1.5-flash';
+        const modelName = payload.model || 'gemini-2.0-flash';
         console.log('🤖 Using model:', modelName);
 
         const model = genAI.getGenerativeModel({
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Build prompt
-        let fullPrompt = '';
+        let fullPrompt = '';  
 
         if (payload.systemPrompt) {
           fullPrompt += `${payload.systemPrompt}\n\n`;

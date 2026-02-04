@@ -63,7 +63,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   isSaved: true,
   lastSavedAt: null,
   isLeftSidebarCollapsed: false,
-  isRightSidebarCollapsed: false,
+  isRightSidebarCollapsed: true,
   setNodes: (nodes) => set({ nodes, isSaved: false }),
 
   setEdges: (edges) => set({ edges, isSaved: false }),

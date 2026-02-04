@@ -36,7 +36,7 @@ export default function NodeButton({ config }: NodeButtonProps) {
           heightPercent: 100 
         }),
         ...(config.type === 'extractFrame' && { timestamp: '50%' }),
-        ...(config.type === 'llmNode' && { selectedModel: 'gemini-1.5-flash' }),
+        ...(config.type === 'llmNode' && { selectedModel: 'gemini-2.0-flash' }),
       },
     };
 

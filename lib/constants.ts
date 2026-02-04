@@ -1,7 +1,7 @@
-// Gemini models available
+// Gemini models available (confirmed working with @google/generative-ai 0.24.1)
 export const GEMINI_MODELS = [
-  { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
-  { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+  { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+  { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
   { value: 'gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash (Experimental)' },
 ];
 

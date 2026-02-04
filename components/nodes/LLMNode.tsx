@@ -55,7 +55,7 @@ function LLMNode({ id, data }: NodeProps) {
 
           {/* Model Selector */}
           <select
-            value={data.selectedModel || 'gemini-1.5-flash'}
+            value={data.selectedModel || 'gemini-2.0-flash'}
             onChange={handleModelChange}
             className="w-full px-3 py-2 bg-weavy-dark text-white text-sm rounded border border-gray-600 focus:border-amber-500 focus:outline-none nodrag"
           >
@@ -131,7 +131,7 @@ function LLMNode({ id, data }: NodeProps) {
               Model:
             </label>
             <select
-              value={data.selectedModel || 'gemini-1.5-flash'}
+              value={data.selectedModel || 'gemini-2.0-flash'}
               onChange={handleModelChange}
               className="w-full px-3 py-2 bg-weavy-dark text-white text-sm rounded border border-gray-600 focus:border-weavy-purple focus:outline-none"
             >

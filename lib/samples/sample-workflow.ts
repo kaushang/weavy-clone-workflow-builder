@@ -28,7 +28,7 @@ export const SAMPLE_WORKFLOW = {
       data: {
         label: 'Content Generator',
         type: 'llmNode',
-        selectedModel: 'gemini-1.5-flash',
+        selectedModel: 'gemini-2.0-flash',
         temperature: 0.7,
         maxTokens: 1000,
       },

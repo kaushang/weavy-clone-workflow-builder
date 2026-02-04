@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
         result = await executeLLM({
           nodeId,
-          model: nodeData?.selectedModel || 'gemini-1.5-flash',
+          model: nodeData?.selectedModel || 'gemini-2.0-flash',
           systemPrompt: nodeData?.systemPromptOverride || connectedInputs?.systemPrompt,
           userMessage: userMessage,
           images: connectedInputs?.images ? [connectedInputs.images] : undefined,

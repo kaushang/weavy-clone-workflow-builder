@@ -276,7 +276,7 @@ const isValidConnection = useCallback((connection: any) => {
                         heightPercent: 100
                     }),
                     ...(type === 'extractFrame' && { timestamp: '50%' }),
-                    ...(type === 'llmNode' && { selectedModel: 'gemini-1.5-flash' }),
+                    ...(type === 'llmNode' && { selectedModel: 'gemini-2.0-flash' }),
                 },
             };
 

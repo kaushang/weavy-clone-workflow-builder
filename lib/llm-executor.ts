@@ -6,9 +6,11 @@ export async function executeGeminiLLM(payload: any) {
     if (!apiKey) {
         throw new Error('GOOGLE_AI_API_KEY not configured');
     }
-
+    console.log('🔑 KEY LENGTH:', apiKey.length, '| START:', apiKey.substring(0, 8), '| END:', apiKey.slice(-6));
     const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = payload.model || 'gemini-1.5-pro'; // ✅ FIXED: Use valid model name
+    const modelName = payload.model || 'gemini-2.0-flash';
+
+    console.log('🤖 Using model:', modelName);
 
     const model = genAI.getGenerativeModel({
         model: modelName,
@@ -31,7 +33,6 @@ export async function executeGeminiLLM(payload: any) {
         throw new Error('No prompt provided');
     }
 
-    console.log('🤖 Using model:', modelName);
     console.log('📝 Generating with prompt length:', fullPrompt.length);
 
     // Generate content
