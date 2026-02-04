@@ -100,9 +100,14 @@ export async function getWorkflowRuns(workflowId: string): Promise<WorkflowRun[]
 }
 
 // Get all runs for a user
-export async function getUserWorkflowRuns(userId: string): Promise<WorkflowRun[]> {
+export async function getUserWorkflowRuns(userId: string, workflowId?: string): Promise<WorkflowRun[]> {
+    const where: any = { userId };
+    if (workflowId) {
+        where.workflowId = workflowId;
+    }
+
     const runs = await prisma.workflowRun.findMany({
-        where: { userId },
+        where,
         orderBy: { createdAt: 'desc' },
         take: 100, // Limit to last 100 runs
     });
